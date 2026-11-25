@@ -53,6 +53,14 @@ def main():
     with open(path, "w", encoding="utf-8", newline="") as handle:
         handle.write(text)
     os.chmod(path, 0o644)
+    # Read-back guard: the file on disk must be exactly the entry we
+    # wrote — one line, no control characters, nothing added or lost.
+    with open(path, "r", encoding="utf-8", newline="") as handle:
+        written = handle.read()
+    if written != text:
+        raise SystemExit("entry.txt read-back mismatch after write")
+    if "\n" in written or any(ord(ch) < 0x20 for ch in written):
+        raise SystemExit("entry.txt contains a newline or control character")
     print("wrote %d chars (%d bytes) to %s" % (
         len(text),
         len(text.encode("utf-8")),
